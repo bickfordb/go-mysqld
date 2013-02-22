@@ -1,0 +1,165 @@
+package mysqld
+
+type CapabilityFlag uint32
+
+const (
+  LONG_PASSWORD CapabilityFlag = 1 << iota
+  FOUND_ROWS
+  LONG_FLAG
+  CONNECT_WITH_DB
+  NO_SCHEMA
+  COMPRESS
+  ODBC
+  LOCAL_FILES
+  IGNORE_SPACE
+  PROTOCOL_41
+  INTERACTIVE
+  SSL
+  IGNORE_SIGPIPE
+  TRANSACTIONS
+  OLD_PROTOCOL_41
+  SECURE_CONNECTION
+  MULTI_STATEMENTS
+  MULTI_RESULTS
+  PS_MULTI_RESULTS
+  PLUGIN_AUTH
+  CONNECT_ATTRS
+  PLUGIN_AUTH_LENENC_CLIENT_DATA
+)
+
+var CapabilityNames = []string {"LONG_PASSWORD", "FOUND_ROWS", "LONG_FLAG",
+  "CONNECT_WITH_DB", "NO_SCHEMA", "COMPRESS", "ODBC", "LOCAL_FILES",
+  "IGNORE_SPACE", "PROTOCOL_41", "INTERACTIVE", "SSL", "IGNORE_SIGPIPE",
+  "TRANSACTIONS", "OLD_PROTOCOL_41", "SECURE_CONNECTION", "MULTI_STATEMENTS",
+  "MULTI_RESULTS", "PS_MULTI_RESULTS", "PLUGIN_AUTH", "CONNECT_ATTRS",
+  "PLUGIN_AUTH_LENENC_CLIENT_DATA"}
+
+func (f CapabilityFlag) Name() string {
+  var i uint32
+  for i = 0; i < uint32(len(CapabilityNames)); i++ {
+    if f & (1 << i) != 0 {
+      return CapabilityNames[i]
+    }
+  }
+  return "?"
+}
+
+func (f *CapabilityFlag) Set(o ...CapabilityFlag) {
+  for _, aFlag := range o {
+    *f = *f | aFlag
+  }
+  return
+}
+
+func (f *CapabilityFlag) Test(o ...CapabilityFlag) bool {
+  for _, aFlag := range o {
+    if (*f & aFlag) == 0 {
+      return false
+    }
+  }
+  return true
+}
+
+type CharSet byte
+
+const (
+  OK byte = 0x0
+  EOF = 0xfe
+  CHARSET_UTF8 CharSet = 0x21
+)
+
+type StatusFlag uint16
+
+const (
+  SERVER_STATUS_IN_TRANS StatusFlag = 1 << iota
+  SERVER_STATUS_AUTOCOMMIT
+  SERVER_MORE_RESULTS_EXISTS
+  SERVER_STATUS_NO_GOOD_INDEX_USED
+  SERVER_STATUS_NO_INDEX_USED
+  SERVER_STATUS_CURSOR_EXISTS
+  SERVER_STATUS_LAST_ROW_SENT
+  SERVER_STATUS_DB_DROPPED
+  SERVER_STATUS_NO_BACKSLASH_ESCAPES
+  SERVER_STATUS_METADATA_CHANGED
+  SERVER_QUERY_WAS_SLOW
+  SERVER_PS_OUT_PARAMS)
+
+func (s *StatusFlag) Set(f ...StatusFlag) {
+  for _, i := range f{
+    *s = *s | i
+  }
+}
+
+func (s *StatusFlag) Test(f ...StatusFlag) bool {
+  for _, i := range f{
+    if (i & *s) == 0 {
+      return false
+    }
+  }
+  return true
+}
+
+type Command byte
+
+const (
+  COM_SLEEP Command = iota
+  COM_QUIT
+  COM_INIT_DB
+  COM_QUERY
+  COM_FIELD_LIST
+  COM_CREATE_DB
+  COM_DROP_DB
+  COM_REFRESH
+  COM_SHUTDOWN
+  COM_STATISTICS
+  COM_PROCESS_INFO
+  COM_CONNECT
+  COM_PROCESS_KILL
+  COM_DEBUG
+  COM_PING
+  COM_TIME
+  COM_DELAYED_INSERT
+  COM_CHANGE_USER
+  COM_BINLOG_DUMP
+  COM_TABLE_DUMP
+  COM_CONNECT_OUT
+  COM_REGISTER_SLAVE
+  COM_STMT_PREPARE
+  COM_STMT_EXECUTE
+  COM_STMT_SEND_LONG_DATA
+  COM_STMT_CLOSE
+  COM_STMT_RESET
+  COM_SET_OPTION
+  COM_STMT_FETCH
+  COM_DAEMON
+  COM_BINLOG_DUMP_GTID)
+
+const (
+  MYSQL_TYPE_DECIMAL byte = iota
+  MYSQL_TYPE_TINY
+  MYSQL_TYPE_SHORT
+  MYSQL_TYPE_LONG
+  MYSQL_TYPE_FLOAT
+  MYSQL_TYPE_DOUBLE
+  MYSQL_TYPE_NULL
+  MYSQL_TYPE_TIMESTAMP
+  MYSQL_TYPE_LONGLONG
+  MYSQL_TYPE_INT24
+  MYSQL_TYPE_DATE
+  MYSQL_TYPE_TIME
+  MYSQL_TYPE_DATETIME
+  MYSQL_TYPE_YEAR
+  MYSQL_TYPE_NEWDATE
+  MYSQL_TYPE_VARCHAR
+  MYSQL_TYPE_BIT
+  MYSQL_TYPE_NEWDECIMAL = 0xf6
+  MYSQL_TYPE_ENUM
+  MYSQL_TYPE_SET
+  MYSQL_TYPE_TINY_BLOB
+  MYSQL_TYPE_MEDIUM_BLOB
+  MYSQL_TYPE_LONG_BLOB
+  MYSQL_TYPE_BLOB
+  MYSQL_TYPE_VAR_STRING
+  MYSQL_TYPE_STRING
+  MYSQL_TYPE_GEOMETRY)
+
