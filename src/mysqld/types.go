@@ -23,7 +23,14 @@ type Conn struct {
   CharacterSet byte
 }
 
-type OnQuery func(conn *Conn, query string, rows chan map[string]interface{})
+type Error struct {
+  Code uint16
+  Message string
+  State string
+}
+
+type OnQuery func(conn *Conn, query string, rows chan map[string]interface{}, errors chan Error)
+type OnSleep func(conn *Conn, errors chan Error)
 
 type Server struct {
   CapabilityFlags CapabilityFlag

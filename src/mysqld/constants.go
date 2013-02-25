@@ -64,6 +64,7 @@ type CharSet byte
 
 const (
   OK byte = 0x0
+  ERR = 0xff
   EOF = 0xfe
   CHARSET_UTF8 CharSet = 0x21
 )

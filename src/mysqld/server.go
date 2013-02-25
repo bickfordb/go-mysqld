@@ -195,7 +195,6 @@ func handleConnection(conn *Conn) (err error) {
 
 func HandleCommands(conn *Conn) (err error) {
   for {
-    log("reading command")
     var pkt []byte
     conn.Sequence = 0
     pkt, err = conn.ReadPacket()
@@ -207,21 +206,23 @@ func HandleCommands(conn *Conn) (err error) {
     cmd := Command(pkt[0])
     switch cmd {
     case COM_QUIT:
+      err = conn.SendOK()
       return
     case COM_QUERY:
       query := string(pkt[1:])
-      var results chan map[string]interface{}
-      if (conn.Server.OnQuery != nil) {
-        results = make(chan map[string]interface{})
-        go conn.Server.OnQuery(conn, query, results)
+      results := make(chan map[string]interface{})
+      errors := make(chan Error)
+      handler := conn.Server.OnQuery
+      if handler == nil {
+        handler = defaultOnQuery
       }
-      err = conn.SendResultSet(results)
+      go handler(conn, query, results, errors)
+      err = conn.SendResultSet(results, errors)
       if err != nil { return }
       continue
-
     default:
-      err = fmt.Errorf("unexpected command: %+v", cmd)
-      return
+      conn.SendError(NotImplemented)
+      continue
     }
   }
   return
@@ -279,7 +280,26 @@ func (conn *Conn) SendRow(cols []string, row map[string]interface{}) (err error)
   return
 }
 
-func (conn *Conn) SendResultSet(rows chan map[string]interface{}) (err error) {
+func (conn *Conn) SendError(err Error) (e error) {
+  buf := &MySQLBuffer{}
+  buf.WriteByte(ERR)
+  binary.Write(buf, binary.LittleEndian, err.Code)
+  // sql-state marker #
+  buf.WriteString(`#`)
+  // sql-state (?) 5 ascii bytes
+  var state string
+  if len(err.State) < 5 {
+    state = `S1000`
+  } else {
+    state = err.State[:5]
+  }
+  buf.WriteString(state)
+  buf.WriteString(err.Message)
+  e = conn.WriteBuffer(buf)
+  return
+}
+
+func (conn *Conn) SendResultSet(rows chan map[string]interface{}, errors chan Error) (err error) {
   if rows == nil {
     err = conn.SendOK()
     return
@@ -288,8 +308,23 @@ func (conn *Conn) SendResultSet(rows chan map[string]interface{}) (err error) {
   var cols []string
   for {
     i += 1
-    row, ok := <-rows
-    if !ok { break }
+    var errOk, rowOk bool
+    var row map[string]interface{}
+    var anError Error
+    select {
+    case row, rowOk = <-rows:
+    case anError, errOk = <-errors:
+      if errOk {
+        conn.SendError(anError)
+      }
+      continue
+      //return
+    }
+    fmt.Println("Got row")
+    if !rowOk {
+      fmt.Println("done")
+      break
+    }
     if i == 0 {
       conn.SendNumFields(uint64(len(row)))
       // send the column definition
@@ -327,8 +362,19 @@ func HandleConnection(conn *Conn) {
   fmt.Println("connection from:", conn.Conn.RemoteAddr(), "on", conn.Conn.LocalAddr())
   err := handleConnection(conn)
   if err != nil {
-    fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
+    fmt.Fprintf(os.Stderr, "unexpected error: %s\n", err.Error())
   }
   return
 }
+
+func defaultOnQuery(conn *Conn, query string, results chan map[string]interface{}, errors chan Error) {
+  defer close(errors)
+  defer close(results)
+  errors<-NotImplemented
+}
+
+var NotImplemented Error = Error{
+  Code:1,
+  Message:"Not Implemented"}
+
 

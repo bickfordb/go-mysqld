@@ -1,3 +1,11 @@
+go-mysqld
+=========
+
+Example
+-------
+
+```go
+
 package main
 
 import "mysqld"
@@ -25,4 +33,19 @@ func main() {
     fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
   }
 }
+
+
+
+```bash
+
+[bran@bathysphere ~]$ mysql -e 'baz'
++----------+----------+
+| column a | column b |
++----------+----------+
+|        1 |      hey |
++----------+----------+
+[bran@bathysphere ~]$ mysql -e 'hey'
+ERROR 1 (S1000) at line 1: Not Implemented
+
+```
 
