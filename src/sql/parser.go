@@ -1,22 +1,19 @@
-
 //line src/sql/parser.y:2
-
 package sql
 
 import "fmt"
 
-
 //line src/sql/parser.y:9
 type yySymType struct {
-	yys int
-  Statement Statement
-  Select Select
-  ColList []Expr
-  Expr Expr
-  Keyword string
-  Double float64
-  String string
-  Integer int64
+	yys       int
+	Statement Statement
+	Select    Select
+	ColList   []Expr
+	Expr      Expr
+	Keyword   string
+	Double    float64
+	String    string
+	Integer   int64
 }
 
 const SELECT = 57346
@@ -75,10 +72,6 @@ const yyErrCode = 2
 const yyMaxDepth = 200
 
 //line src/sql/parser.y:54
-
-
-
-
 //line yacctab:1
 var yyExca = []int{
 	-1, 1,
@@ -369,37 +362,55 @@ yydefault:
 	case 1:
 		//line src/sql/parser.y:33
 		{
-	           l, _ := yylex.(*Lexer)
-	           l.Statement = yyS[yypt-0].Select
-	           yyVAL.Statement = yyS[yypt-0].Select
-	         }
+			l, _ := yylex.(*Lexer)
+			l.Statement = yyS[yypt-0].Select
+			yyVAL.Statement = yyS[yypt-0].Select
+		}
 	case 2:
 		//line src/sql/parser.y:39
-		{ yyVAL.Select = Select{Columns: yyS[yypt-0].ColList} }
+		{
+			yyVAL.Select = Select{Columns: yyS[yypt-0].ColList}
+		}
 	case 3:
 		//line src/sql/parser.y:42
-		{ yyVAL.ColList = []Expr{yyS[yypt-0].Expr} }
+		{
+			yyVAL.ColList = []Expr{yyS[yypt-0].Expr}
+		}
 	case 4:
 		//line src/sql/parser.y:43
-		{ yyVAL.ColList = append(yyS[yypt-2].ColList, yyS[yypt-0].Expr) }
+		{
+			yyVAL.ColList = append(yyS[yypt-2].ColList, yyS[yypt-0].Expr)
+		}
 	case 5:
 		//line src/sql/parser.y:46
-		{ yyVAL.Expr = Double(yyS[yypt-0].Double) }
+		{
+			yyVAL.Expr = Double(yyS[yypt-0].Double)
+		}
 	case 6:
 		//line src/sql/parser.y:47
-		{ yyVAL.Expr = Integer(yyS[yypt-0].Integer) }
+		{
+			yyVAL.Expr = Integer(yyS[yypt-0].Integer)
+		}
 	case 7:
 		//line src/sql/parser.y:48
-		{ yyVAL.Expr = String(yyS[yypt-0].String) }
+		{
+			yyVAL.Expr = String(yyS[yypt-0].String)
+		}
 	case 8:
 		//line src/sql/parser.y:49
-		{ yyVAL.Expr = yyS[yypt-1].Expr }
+		{
+			yyVAL.Expr = yyS[yypt-1].Expr
+		}
 	case 9:
 		//line src/sql/parser.y:50
-		{ yyVAL.Expr = BinaryExpr{yyS[yypt-1].Keyword, yyS[yypt-2].Expr, yyS[yypt-0].Expr}}
+		{
+			yyVAL.Expr = BinaryExpr{yyS[yypt-1].Keyword, yyS[yypt-2].Expr, yyS[yypt-0].Expr}
+		}
 	case 10:
 		//line src/sql/parser.y:51
-		{ yyVAL.Expr = UnaryExpr{yyS[yypt-1].Keyword, yyS[yypt-0].Expr} }
+		{
+			yyVAL.Expr = UnaryExpr{yyS[yypt-1].Keyword, yyS[yypt-0].Expr}
+		}
 	}
 	goto yystack /* stack new state and value */
 }

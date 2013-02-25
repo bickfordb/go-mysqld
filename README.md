@@ -1,6 +1,8 @@
 go-mysqld
 =========
 
+Library for authoring daemons which speak the MySQL protocol
+
 Example
 -------
 

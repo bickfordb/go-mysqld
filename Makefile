@@ -10,6 +10,8 @@ sql: src/sql/parser.go
 main:
 	GOPATH=$(realpath .) go run src/main.go
 
+fmt:
+	GOPATH=$(realpath .) go fmt mysqld sql
 
 test:
 	GOPATH=$(realpath .) go test -test.v mysqld
