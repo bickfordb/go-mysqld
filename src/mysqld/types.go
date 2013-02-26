@@ -30,10 +30,7 @@ type Error struct {
 	State   string
 }
 
-type OnQuery func(conn *Conn, query string, rows chan map[string]interface{}, errors chan Error)
-type OnSleep func(conn *Conn, errors chan Error)
-
 type Server struct {
 	CapabilityFlags CapabilityFlag
-	OnQuery         OnQuery
+	Queries         chan *Query
 }

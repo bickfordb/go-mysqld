@@ -4,24 +4,21 @@ import "mysqld"
 import "os"
 import "fmt"
 
-func handleQuery(conn *mysqld.Conn, query string, rows chan map[string]interface{}, errors chan mysqld.Error) {
-	if query == "baz" {
-		rows <- map[string]interface{}{
-			"column a": 1,
-			"column b": "hey"}
-	} else {
-		errors <- mysqld.NotImplemented
-	}
-	defer close(rows)
-	defer close(errors)
-	return
-}
-
 func main() {
-	server := mysqld.Server{}
-	server.OnQuery = handleQuery
-	err := server.Listen(3306)
+	server := mysqld.NewServer()
+	err := server.Listen(":3306")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
+		fmt.Fprintf(os.Stderr, "error listening: %s\n", err.Error())
+		return
+	}
+	for {
+		query := <-server.Queries
+		if query.Statement == "baz" {
+			query.WriteRow(map[string]interface{}{"column a": "hey", "column b": 1})
+			query.WriteRow(map[string]interface{}{"column a": "you", "column b": 2})
+			query.Finish(nil)
+		} else {
+			query.Finish(mysqld.NotImplemented)
+		}
 	}
 }

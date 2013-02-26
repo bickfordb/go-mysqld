@@ -5,12 +5,9 @@ import "fmt"
 import "net"
 import "os"
 
-func (server *Server) Listen(port int) (err error) {
-	addr := fmt.Sprintf(":%d", port)
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return
-	}
+func NewServer() *Server {
+	server := &Server{}
+	server.Queries = make(chan *Query, 100)
 	server.CapabilityFlags.Set(LONG_PASSWORD,
 		LONG_FLAG,
 		FOUND_ROWS,
@@ -24,18 +21,27 @@ func (server *Server) Listen(port int) (err error) {
 		PLUGIN_AUTH,
 		SECURE_CONNECTION,
 		PLUGIN_AUTH_LENENC_CLIENT_DATA)
+	return server
+}
 
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			println("err:", err)
-		} else {
-			c := &Conn{}
-			c.Conn = conn
-			c.Server = server
-			go HandleConnection(c)
-		}
+func (server *Server) Listen(addr string) (err error) {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return
 	}
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "err: %s\n", err.Error())
+			} else {
+				c := &Conn{}
+				c.Conn = conn
+				c.Server = server
+				go HandleConnection(c)
+			}
+		}
+	}()
 	return
 }
 
@@ -240,15 +246,9 @@ func HandleCommands(conn *Conn) (err error) {
 			err = conn.SendOK()
 			return
 		case COM_QUERY:
-			query := string(pkt[1:])
-			results := make(chan map[string]interface{})
-			errors := make(chan Error)
-			handler := conn.Server.OnQuery
-			if handler == nil {
-				handler = defaultOnQuery
-			}
-			go handler(conn, query, results, errors)
-			err = conn.SendResultSet(results, errors)
+			query := NewQuery(conn, string(pkt[1:]))
+			conn.Server.Queries <- query
+			err = conn.SendResultSet(query)
 			if err != nil {
 				return
 			}
@@ -315,7 +315,7 @@ func (conn *Conn) SendRow(cols []string, row map[string]interface{}) (err error)
 	return
 }
 
-func (conn *Conn) SendError(err Error) (e error) {
+func (conn *Conn) SendError(err *Error) (e error) {
 	buf := &MySQLBuffer{}
 	buf.WriteByte(ERR)
 	binary.Write(buf, binary.LittleEndian, err.Code)
@@ -334,30 +334,23 @@ func (conn *Conn) SendError(err Error) (e error) {
 	return
 }
 
-func (conn *Conn) SendResultSet(rows chan map[string]interface{}, errors chan Error) (err error) {
-	if rows == nil {
-		err = conn.SendOK()
-		return
-	}
+func (conn *Conn) SendResultSet(query *Query) (err error) {
 	i := -1
 	var cols []string
 	for {
 		i += 1
 		var errOk, rowOk bool
 		var row map[string]interface{}
-		var anError Error
+		var anError *Error
 		select {
-		case row, rowOk = <-rows:
-		case anError, errOk = <-errors:
+		case row, rowOk = <-query.rows:
+		case anError, errOk = <-query.errors:
 			if errOk {
 				conn.SendError(anError)
 			}
 			continue
-			//return
 		}
-		fmt.Println("Got row")
 		if !rowOk {
-			fmt.Println("done")
 			break
 		}
 		if i == 0 {
@@ -408,12 +401,6 @@ func HandleConnection(conn *Conn) {
 	return
 }
 
-func defaultOnQuery(conn *Conn, query string, results chan map[string]interface{}, errors chan Error) {
-	defer close(errors)
-	defer close(results)
-	errors <- NotImplemented
-}
-
-var NotImplemented Error = Error{
+var NotImplemented *Error = &Error{
 	Code:    1,
 	Message: "Not Implemented"}
